@@ -69,7 +69,7 @@ impl AppTray {
         menu.append(&quit_item).ok()?;
         let tray = match TrayIconBuilder::new()
             .with_menu(Box::new(menu))
-            .with_tooltip("Task Tracker")
+            .with_tooltip("Task Time Tracker")
             .with_icon(idle_icon())
             .build()
         {

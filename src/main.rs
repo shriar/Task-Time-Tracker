@@ -18,7 +18,7 @@ fn main() {
         ..Default::default()
     };
     let _ = eframe::run_native(
-        "Task Tracker",
+        "Task Time Tracker",
         options,
         Box::new(|cc| Ok(Box::new(TrackerApp::new(cc)))),
     );

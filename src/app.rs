@@ -206,11 +206,11 @@ impl TrackerApp {
                 let now = now_ts();
                 let tip = match running_id {
                     Some(id) => format!(
-                        "Task Tracker — {} {}",
+                        "Task Time Tracker — {} {}",
                         self.task_name(id),
                         format_hms(self.running_secs(now).unwrap_or(0))
                     ),
-                    None => "Task Tracker".to_owned(),
+                    None => "Task Time Tracker".to_owned(),
                 };
                 t.set_running(running, &tip);
             }

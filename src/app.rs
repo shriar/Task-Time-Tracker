@@ -73,6 +73,8 @@ pub struct TrackerApp {
     pub graph_days: i64,
     pub mini_visible: bool,
     pub new_project: String,
+    pub rename_id: Option<u64>,
+    pub rename_text: String,
     pub tray: Option<AppTray>,
     pub tray_showing: bool,
     pub allow_close: bool,
@@ -129,16 +131,28 @@ impl TrackerApp {
         if dirty {
             db.save(&data_path);
         }
+        // Screenshot/testing hook: TASK_TRACKER_TAB=track|log|stats|projects
+        let tab = std::env::var("TASK_TRACKER_TAB")
+            .ok()
+            .and_then(|s| match s.to_lowercase().as_str() {
+                "log" => Some(Tab::Log),
+                "stats" => Some(Tab::Stats),
+                "projects" => Some(Tab::Projects),
+                _ => Some(Tab::Track),
+            })
+            .unwrap_or(Tab::Track);
         Self {
             db,
             data_path,
-            tab: Tab::Track,
+            tab,
             sub_for: None,
             sub_name: String::new(),
             history_date: today(),
             graph_days: 7,
             mini_visible: false,
             new_project: String::new(),
+            rename_id: None,
+            rename_text: String::new(),
             tray: AppTray::new(),
             tray_showing: true,
             allow_close: false,
@@ -288,6 +302,18 @@ impl TrackerApp {
         if self.sub_for == Some(id) {
             self.sub_for = None;
             self.sub_name.clear();
+        }
+        self.persist();
+    }
+
+    /// Rename a task or subtask (empty names are ignored).
+    pub fn rename_task(&mut self, id: u64, name: &str) {
+        let name = name.trim();
+        if name.is_empty() {
+            return;
+        }
+        if let Some(t) = self.db.tasks.iter_mut().find(|t| t.id == id) {
+            t.name = name.to_owned();
         }
         self.persist();
     }

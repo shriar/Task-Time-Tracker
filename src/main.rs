@@ -3,6 +3,7 @@
 mod app;
 mod model;
 mod store;
+mod tray;
 mod ui_graph;
 mod ui_history;
 mod ui_mini;

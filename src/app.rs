@@ -6,6 +6,7 @@ use eframe::egui;
 
 use crate::model::*;
 use crate::store::*;
+use crate::tray::{self, MENU_QUIT, MENU_SHOW, AppTray};
 use crate::{ui_graph, ui_history, ui_mini, ui_projects, ui_today};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -72,6 +73,10 @@ pub struct TrackerApp {
     pub graph_days: i64,
     pub mini_visible: bool,
     pub new_project: String,
+    pub tray: Option<AppTray>,
+    pub tray_showing: bool,
+    pub allow_close: bool,
+    pub tray_was_running: bool,
 }
 
 impl TrackerApp {
@@ -134,11 +139,64 @@ impl TrackerApp {
             graph_days: 7,
             mini_visible: false,
             new_project: String::new(),
+            tray: AppTray::new(),
+            tray_showing: true,
+            allow_close: false,
+            tray_was_running: false,
         }
     }
 
     fn persist(&self) {
         self.db.save(&self.data_path);
+    }
+
+    fn set_window_visible(&mut self, ctx: &egui::Context, visible: bool) {
+        self.tray_showing = visible;
+        ctx.send_viewport_cmd(egui::ViewportCommand::Visible(visible));
+        if let Some(t) = &self.tray {
+            t.set_shown(visible);
+        }
+    }
+
+    fn poll_tray(&mut self, ctx: &egui::Context) {
+        // X button minimizes to tray instead of quitting.
+        if ctx.input(|i| i.viewport().close_requested()) && !self.allow_close {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            self.set_window_visible(ctx, false);
+        }
+        // Tray menu clicks.
+        for id in tray::poll_menu() {
+            if id == MENU_SHOW {
+                let visible = !self.tray_showing;
+                self.set_window_visible(ctx, visible);
+            } else if id == MENU_QUIT {
+                self.allow_close = true;
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+        }
+        // Left-click toggles the window.
+        if tray::poll_left_click() {
+            let visible = !self.tray_showing;
+            self.set_window_visible(ctx, visible);
+        }
+        // Icon color follows the timer state.
+        let running_id = self.running_task_id();
+        let running = running_id.is_some();
+        if running != self.tray_was_running {
+            self.tray_was_running = running;
+            if let Some(t) = &self.tray {
+                let now = now_ts();
+                let tip = match running_id {
+                    Some(id) => format!(
+                        "Task Tracker — {} {}",
+                        self.task_name(id),
+                        format_hms(self.running_secs(now).unwrap_or(0))
+                    ),
+                    None => "Task Tracker".to_owned(),
+                };
+                t.set_running(running, &tip);
+            }
+        }
     }
 
     pub fn running_task_id(&self) -> Option<u64> {
@@ -399,6 +457,9 @@ impl eframe::App for TrackerApp {
             ui.ctx()
                 .request_repaint_after(std::time::Duration::from_secs(1));
         }
+
+        // Tray events: X minimizes to tray, icon color follows timer.
+        self.poll_tray(&ui.ctx().clone());
 
         // Top nav: Track | Log | Stats | Projects
         egui::Panel::top("tabs").show(ui, |ui| {

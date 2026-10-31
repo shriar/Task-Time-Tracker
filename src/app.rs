@@ -478,11 +478,11 @@ impl TrackerApp {
 
 impl eframe::App for TrackerApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        // Live tick while a timer runs.
-        if self.db.entries.iter().any(|e| e.is_running()) {
-            ui.ctx()
-                .request_repaint_after(std::time::Duration::from_secs(1));
-        }
+        // Steady heartbeat (4x/sec): cheap for this UI, and it guarantees
+        // tray menu / left-click events are processed even when the window
+        // is idle or hidden in the tray. Also drives the live timer.
+        ui.ctx()
+            .request_repaint_after(std::time::Duration::from_millis(250));
 
         // Tray events: X minimizes to tray, icon color follows timer.
         self.poll_tray(&ui.ctx().clone());

@@ -1,0 +1,11 @@
+# Rust build output
+/target/
+tasks_data.json
+*.tmp
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+Desktop.ini

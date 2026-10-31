@@ -165,6 +165,7 @@ impl TrackerApp {
     }
 
     fn set_window_visible(&mut self, ctx: &egui::Context, visible: bool) {
+        crate::tray::log_line(&format!("tray: set_visible({})", visible));
         self.tray_showing = visible;
         ctx.send_viewport_cmd(egui::ViewportCommand::Visible(visible));
         if let Some(t) = &self.tray {
@@ -175,21 +176,24 @@ impl TrackerApp {
     fn poll_tray(&mut self, ctx: &egui::Context) {
         // X button minimizes to tray instead of quitting.
         if ctx.input(|i| i.viewport().close_requested()) && !self.allow_close {
+            crate::tray::log_line("tray: X pressed -> hide to tray");
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
             self.set_window_visible(ctx, false);
         }
-        // Tray menu clicks.
+        // Tray menu clicks (menu only offers Show + Quit).
         for id in tray::poll_menu() {
+            crate::tray::log_line(&format!("tray: menu event '{}'", id));
             if id == MENU_SHOW {
-                let visible = !self.tray_showing;
-                self.set_window_visible(ctx, visible);
+                self.set_window_visible(ctx, true);
             } else if id == MENU_QUIT {
+                crate::tray::log_line("tray: quit requested");
                 self.allow_close = true;
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             }
         }
         // Left-click toggles the window.
         if tray::poll_left_click() {
+            crate::tray::log_line("tray: left click -> toggle");
             let visible = !self.tray_showing;
             self.set_window_visible(ctx, visible);
         }

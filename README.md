@@ -14,7 +14,7 @@ Minimal desktop time tracker in Rust (`eframe`/`egui`, warm dark theme).
 - **Floating always-on-top mini timer** (Show/Hide from the Track tab)
 - **System tray icon** — beige when idle, **red** while a timer runs
   (tooltip shows the running task); left-click toggles the window,
-  X minimizes to tray, Quit via the tray menu
+  right-click menu has Show + Quit; X minimizes to tray
 - Closing the app auto-stops a running timer; a timer left running by a
   crash is stopped on next start
 

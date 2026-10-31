@@ -1,7 +1,22 @@
+use std::fs::OpenOptions;
+use std::io::Write;
+
 use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
     menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem},
 };
+
+/// Append one line to debug.log next to the exe (tray diagnostics).
+pub fn log_line(msg: &str) {
+    let path = std::env::current_exe()
+        .ok()
+        .and_then(|e| e.parent().map(|d| d.join("debug.log")));
+    if let Some(p) = path {
+        if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(p) {
+            let _ = writeln!(f, "{}", msg);
+        }
+    }
+}
 
 pub const MENU_SHOW: &str = "tray_show_hide";
 pub const MENU_QUIT: &str = "tray_quit";
@@ -46,18 +61,27 @@ pub struct AppTray {
 
 impl AppTray {
     pub fn new() -> Option<Self> {
-        let show_item = MenuItem::with_id(MENU_SHOW, "Hide", true, None);
+        let show_item = MenuItem::with_id(MENU_SHOW, "Show", true, None);
         let quit_item = MenuItem::with_id(MENU_QUIT, "Quit", true, None);
         let menu = Menu::new();
         menu.append(&show_item).ok()?;
         menu.append(&PredefinedMenuItem::separator()).ok()?;
         menu.append(&quit_item).ok()?;
-        let tray = TrayIconBuilder::new()
+        let tray = match TrayIconBuilder::new()
             .with_menu(Box::new(menu))
             .with_tooltip("Task Tracker")
             .with_icon(idle_icon())
             .build()
-            .ok()?;
+        {
+            Ok(t) => {
+                log_line("tray: icon created ok");
+                t
+            }
+            Err(e) => {
+                log_line(&format!("tray: BUILD FAILED: {:?}", e));
+                return None;
+            }
+        };
         Some(Self { tray, show_item })
     }
 
@@ -68,9 +92,9 @@ impl AppTray {
         let _ = self.tray.set_tooltip(Some(tooltip));
     }
 
-    pub fn set_shown(&self, visible: bool) {
-        self.show_item
-            .set_text(if visible { "Hide" } else { "Show" });
+    pub fn set_shown(&self, _visible: bool) {
+        // Menu only offers "Show" (hiding is done with the X button).
+        self.show_item.set_text("Show");
     }
 }
 

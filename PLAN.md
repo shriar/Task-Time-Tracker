@@ -9,8 +9,8 @@ Minimal desktop time tracker in the style of the reference screenshot.
 - Bottom status bar: Today · This week · N days in a row
 - Floating always-on-top mini timer (show/hide)
 - System tray icon: beige when idle, **red when a timer runs** (tooltip shows
-  the running task); left-click toggles the window, X minimizes to tray,
-  Quit via the tray menu
+  the running task); left-click toggles the window, right-click menu has
+  Show + Quit; X minimizes to tray
 - Warm dark theme, monospace type
 
 ## 2. Tech Stack (proposed)

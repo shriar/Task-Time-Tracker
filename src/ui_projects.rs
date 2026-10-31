@@ -33,9 +33,9 @@ pub fn show(app: &mut TrackerApp, ui: &mut egui::Ui) {
         );
     }
     for task in active {
-        let n_subs = app.subtasks(task.id).len();
+        let n_subs = app.all_subtasks(task.id).len();
         task_row(app, ui, task.id, &task.name, false, false, n_subs);
-        for sub in app.subtasks(task.id) {
+        for sub in app.all_subtasks(task.id) {
             task_row(app, ui, sub.id, &sub.name, false, true, 0);
         }
     }
@@ -56,6 +56,9 @@ pub fn show(app: &mut TrackerApp, ui: &mut egui::Ui) {
     }
     for task in archived {
         task_row(app, ui, task.id, &task.name, true, false, 0);
+        for sub in app.all_subtasks(task.id) {
+            task_row(app, ui, sub.id, &sub.name, sub.archived, true, 0);
+        }
     }
 }
 
@@ -91,10 +94,20 @@ fn task_row(
         if is_sub {
             ui.label(egui::RichText::new("      └").size(13.0).color(DIM));
             color_bar(ui, DIM, 20.0);
-            ui.label(name);
         } else {
             color_bar(ui, color_for_task(id), 22.0);
-            ui.label(egui::RichText::new(name).strong());
+        }
+        let name_text = if archived && !is_sub {
+            format!("{} [completed]", name)
+        } else if archived {
+            format!("{} [completed]", name)
+        } else {
+            name.to_owned()
+        };
+        if is_sub || archived {
+            ui.label(egui::RichText::new(name_text).size(15.0).color(DIM));
+        } else {
+            ui.label(egui::RichText::new(name_text).strong());
             if n_subs > 0 {
                 ui.label(
                     egui::RichText::new(format!(
@@ -111,14 +124,16 @@ fn task_row(
             if ui.small_button("Delete").clicked() {
                 app.delete_task(id);
             }
-            if !is_sub {
-                if archived {
-                    if ui.small_button("Unarchive").clicked() {
-                        app.set_archived(id, false);
-                    }
-                } else if ui.small_button("Archive").clicked() {
-                    app.set_archived(id, true);
+            if archived {
+                if ui.small_button("Unarchive").clicked() {
+                    app.set_archived(id, false);
                 }
+            } else if is_sub {
+                if ui.small_button("Complete").clicked() {
+                    app.complete_task(id);
+                }
+            } else if ui.small_button("Archive").clicked() {
+                app.set_archived(id, true);
             }
             if ui.small_button("Rename").clicked() {
                 app.rename_id = Some(id);

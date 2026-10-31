@@ -278,17 +278,33 @@ impl TrackerApp {
             t.archived = archived;
         }
         if archived {
-            // Stopping is handled by hide; ensure no timer keeps running on it.
-            let running_on = self
-                .db
-                .entries
-                .iter()
-                .any(|e| e.is_running() && e.task_id == id);
-            if running_on {
-                self.stop_running();
+            // Stop any running timer on it or its subtasks.
+            let mut ids = vec![id];
+            ids.extend(
+                self.db
+                    .tasks
+                    .iter()
+                    .filter(|t| t.parent_id == Some(id))
+                    .map(|t| t.id),
+            );
+            let now = now_ts();
+            let mut stopped = false;
+            for e in self.db.entries.iter_mut().filter(|e| e.is_running()) {
+                if ids.contains(&e.task_id) {
+                    e.end = Some(now);
+                    stopped = true;
+                }
+            }
+            if stopped {
+                self.persist();
             }
         }
         self.persist();
+    }
+
+    /// Complete a project/subtask: stops its timer and moves it to archive.
+    pub fn complete_task(&mut self, id: u64) {
+        self.set_archived(id, true);
     }
 
     /// Delete a task, its subtasks, and all their entries.
@@ -361,7 +377,21 @@ impl TrackerApp {
         v
     }
 
+    /// Visible subtasks of a project (Track tab hides archived/completed).
     pub fn subtasks(&self, parent: u64) -> Vec<Task> {
+        let mut v: Vec<Task> = self
+            .db
+            .tasks
+            .iter()
+            .filter(|t| t.parent_id == Some(parent) && !t.archived)
+            .cloned()
+            .collect();
+        v.sort_by_key(|t| t.id);
+        v
+    }
+
+    /// All subtasks including archived (Projects/Log tabs).
+    pub fn all_subtasks(&self, parent: u64) -> Vec<Task> {
         let mut v: Vec<Task> = self
             .db
             .tasks

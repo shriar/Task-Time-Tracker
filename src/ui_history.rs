@@ -47,7 +47,7 @@ pub fn show(app: &mut TrackerApp, ui: &mut egui::Ui) {
             let color = color_for_task(task.id);
             let sessions: usize = app.sessions_on_day(task.id, day)
                 + app
-                    .subtasks(task.id)
+                    .all_subtasks(task.id)
                     .iter()
                     .map(|s| app.sessions_on_day(s.id, day))
                     .sum::<usize>();
@@ -65,7 +65,7 @@ pub fn show(app: &mut TrackerApp, ui: &mut egui::Ui) {
                         ))
                         .strong(),
                     );
-                    for sub in app.subtasks(task.id) {
+                    for sub in app.all_subtasks(task.id) {
                         let s = app.task_secs_on_day(sub.id, day, now);
                         if s == 0 {
                             continue;

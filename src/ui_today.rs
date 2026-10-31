@@ -90,6 +90,9 @@ fn project_row(
                 ui.with_layout(
                     egui::Layout::right_to_left(egui::Align::Center),
                     |ui| {
+                        if ui.small_button("✓").on_hover_text("Complete (moves to archive)").clicked() {
+                            app.complete_task(id);
+                        }
                         play_button(app, ui, id, running, now);
                     },
                 );
@@ -133,6 +136,9 @@ fn subtask_row(
                 ui.with_layout(
                     egui::Layout::right_to_left(egui::Align::Center),
                     |ui| {
+                        if ui.small_button("✓").on_hover_text("Complete (moves to archive)").clicked() {
+                            app.complete_task(id);
+                        }
                         play_button(app, ui, id, running, now);
                     },
                 );
